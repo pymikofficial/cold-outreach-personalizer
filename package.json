@@ -1,0 +1,9 @@
+{
+  "name": "cold-outreach-personalizer",
+  "version": "1.0.0",
+  "description": "Paste a prospect list and an offer, get back a personalized 3-touch cold outreach sequence per prospect, generated one Claude call per prospect with an honest grounded/generic self-report. Built by Soumik Chatterjee / cosmik.work.",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
