@@ -335,6 +335,9 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
 
     const head = document.createElement('div');
     head.className = 'p-head';
+    head.setAttribute('role', 'button');
+    head.setAttribute('tabindex', '0');
+    head.setAttribute('aria-expanded', 'false');
 
     const left = document.createElement('div');
     left.className = 'p-head-left';
@@ -364,7 +367,17 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
     chev.textContent = '▾';
     head.appendChild(chev);
 
-    head.addEventListener('click', () => card.classList.toggle('open'));
+    function toggleCard(){
+      const open = card.classList.toggle('open');
+      head.setAttribute('aria-expanded', String(open));
+    }
+    head.addEventListener('click', toggleCard);
+    head.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        toggleCard();
+      }
+    });
 
     const body = document.createElement('div');
     body.className = 'p-body';
@@ -395,7 +408,10 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
     card.appendChild(head);
     card.appendChild(body);
 
-    if (idx === 0) card.classList.add('open');
+    if (idx === 0) {
+      card.classList.add('open');
+      head.setAttribute('aria-expanded', 'true');
+    }
 
     return card;
   }
