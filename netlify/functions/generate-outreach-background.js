@@ -14,8 +14,14 @@ const BLOBS_CONFIG = {
 
 const MAX_PROSPECTS_PER_BATCH = 12;
 const DAILY_PROSPECT_CAP = 100;
+const DAILY_PROSPECT_CAP_PER_IP = 30;
 const MAX_INPUT_CHARS = 40000;
 const MAX_OFFER_CHARS = 4000;
+const JOB_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
+
+function clientIp(event) {
+  return (event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
+}
 
 exports.handler = async (event) => {
   const store = getStore({ name: 'outreach', ...BLOBS_CONFIG });
@@ -23,7 +29,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    jobId = body.jobId;
+    jobId = typeof body.jobId === 'string' && JOB_ID_RE.test(body.jobId) ? body.jobId : null;
     const rawInput = (body.prospects || '').slice(0, MAX_INPUT_CHARS);
     const offer = (body.offer || '').slice(0, MAX_OFFER_CHARS);
 
@@ -44,19 +50,29 @@ exports.handler = async (event) => {
       return;
     }
 
-    // --- Guardrail: daily total-prospects rate limit ---
+    // --- Guardrail: daily total-prospects rate limit (global + per-IP) ---
     const today = new Date().toISOString().slice(0, 10);
     const limitStore = getStore({ name: 'rate-limits', ...BLOBS_CONFIG });
     const counterKey = `outreach-${today}`;
+    const ip = clientIp(event);
+    const ipCounterKey = `outreach-${today}-ip-${ip}`;
     let countSoFar = 0;
+    let ipCountSoFar = 0;
     try {
       const existing = await limitStore.get(counterKey);
       countSoFar = existing ? parseInt(existing, 10) : 0;
+      const ipExisting = await limitStore.get(ipCounterKey);
+      ipCountSoFar = ipExisting ? parseInt(ipExisting, 10) : 0;
     } catch (e) {
       countSoFar = 0;
+      ipCountSoFar = 0;
     }
     if (countSoFar + prospects.length > DAILY_PROSPECT_CAP) {
       await store.setJSON(jobId, { status: 'error', message: "Today's free processing limit has been reached. Come back tomorrow." });
+      return;
+    }
+    if (ipCountSoFar + prospects.length > DAILY_PROSPECT_CAP_PER_IP) {
+      await store.setJSON(jobId, { status: 'error', message: "You've hit today's per-user processing limit. Come back tomorrow." });
       return;
     }
 
@@ -86,6 +102,7 @@ exports.handler = async (event) => {
     }
 
     await limitStore.set(counterKey, String(countSoFar + prospects.length));
+    await limitStore.set(ipCounterKey, String(ipCountSoFar + prospects.length));
 
     const summary = {
       total: results.length,
