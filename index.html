@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cold Outreach Personalizer | cosmik.work</title>
 <meta name="description" content="Paste a prospect list and your offer. Get back a personalized 3-touch cold outreach sequence for every prospect, each one honestly labeled grounded or generic.">
+<link rel="canonical" href="https://cold-outreach-personalizer.netlify.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Cold Outreach Personalizer | cosmik.work">
+<meta property="og:description" content="Paste a prospect list and your offer. Get back a personalized 3-touch cold outreach sequence for every prospect, each one honestly labeled grounded or generic.">
+<meta property="og:url" content="https://cold-outreach-personalizer.netlify.app/">
+<meta property="og:image" content="https://cosmik.work/img/cosmikwork_broad_logo.webp">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cold Outreach Personalizer | cosmik.work">
+<meta name="twitter:description" content="Paste a prospect list and your offer. Get back a personalized 3-touch cold outreach sequence for every prospect, each one honestly labeled grounded or generic.">
+<meta name="twitter:image" content="https://cosmik.work/img/cosmikwork_broad_logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -69,6 +79,9 @@ textarea{
 textarea:focus{border-color:rgba(167,139,250,.5);}
 textarea::placeholder{color:#55555f;}
 #prospects{min-height:220px;}
+.char-count{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-2);text-align:right;margin-top:6px;}
+.char-count.warn{color:var(--warn);}
+.char-count.over{color:var(--rec);}
 #offer{min-height:120px;margin-top:28px;}
 
 .input-foot{
@@ -166,6 +179,12 @@ footer a{color:var(--accent-bright);text-decoration:none;}
 footer a:hover{text-decoration:underline;}
 
 :focus-visible{outline:2px solid var(--accent-bright);outline-offset:2px;}
+.skip-link{
+  position:absolute;left:-9999px;top:0;z-index:100;
+  background:var(--accent);color:#fff;padding:12px 20px;border-radius:0 0 10px 0;
+  font-family:'JetBrains Mono',monospace;font-size:12px;text-decoration:none;
+}
+.skip-link:focus{left:0;}
 
 @media(max-width:640px){
   .p-head,.p-body-inner{padding-left:20px;padding-right:20px;}
@@ -174,14 +193,16 @@ footer a:hover{text-decoration:underline;}
 </head>
 <body>
 
-<main>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<main id="main">
   <p class="eyebrow">cosmik.work · 07 ~ Outreach</p>
   <h1>Personalize the whole list.<br>Never fake a <em>single detail.</em></h1>
   <p class="sub">Paste your prospect list and describe your offer. Get back a 3-touch email sequence (initial, follow-up, breakup) for every prospect, one AI call per prospect, each one honestly telling you whether it found a real detail to personalize with or had to fall back to a generic opener.</p>
 
   <div class="input-wrap">
     <label class="field-label" for="prospects">Paste your prospect list (CSV or freeform, one per row or block)</label>
-    <textarea id="prospects" placeholder="CSV with header:
+    <textarea id="prospects" maxlength="40000" placeholder="CSV with header:
 Name,Company,Role,Note
 Priya Sharma,Acme Corp,VP Ops,Posted on LinkedIn last month about scaling a remote ops team
 Raj Patel,LogiCo,Operations Manager,
@@ -191,12 +212,14 @@ Raj Patel,LogiCo,Operations Manager,
 Priya Sharma is VP of Ops at Acme Corp. She posted on LinkedIn last month about scaling a remote ops team.
 
 Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
+    <p class="char-count" id="prospectsCount" aria-live="polite">0 / 40000</p>
 
     <label class="field-label" id="offerLabel" for="offer" style="margin-top:28px;">Your offer (what you're pitching)</label>
-    <textarea id="offer" placeholder="e.g. We help logistics and ops teams cut onboarding time for new warehouse staff by 40% with a guided training platform. Free 2-week pilot, no contract."></textarea>
+    <textarea id="offer" maxlength="4000" placeholder="e.g. We help logistics and ops teams cut onboarding time for new warehouse staff by 40% with a guided training platform. Free 2-week pilot, no contract."></textarea>
+    <p class="char-count" id="offerCount" aria-live="polite">0 / 4000</p>
 
     <div class="input-foot">
-      <p class="privacy-note"><strong>Privacy note:</strong> your offer text is scrubbed for emails/phone numbers before it reaches the AI. Prospect info is sent as-is (not scrubbed) since it's the actual content being personalized against, not incidental noise.</p>
+      <p class="privacy-note"><strong>Privacy note:</strong> your offer text is scrubbed for emails/phone numbers before it reaches the AI. Prospect info is sent as-is (not scrubbed) since it's the actual content being personalized against, not incidental noise. Capped at 12 prospects per batch.</p>
       <button class="generate" id="go">Generate sequences</button>
     </div>
   </div>
@@ -223,6 +246,18 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
   const go = document.getElementById('go');
   const prospectsEl = document.getElementById('prospects');
   const offerEl = document.getElementById('offer');
+  const prospectsCount = document.getElementById('prospectsCount');
+  const offerCount = document.getElementById('offerCount');
+  prospectsEl.addEventListener('input', () => {
+    const n = prospectsEl.value.length;
+    prospectsCount.textContent = n + ' / 40000';
+    prospectsCount.className = 'char-count' + (n >= 40000 ? ' over' : n >= 36000 ? ' warn' : '');
+  });
+  offerEl.addEventListener('input', () => {
+    const n = offerEl.value.length;
+    offerCount.textContent = n + ' / 4000';
+    offerCount.className = 'char-count' + (n >= 4000 ? ' over' : n >= 3600 ? ' warn' : '');
+  });
   const statusEl = document.getElementById('status');
   const statusText = document.getElementById('statusText');
   const resultsEl = document.getElementById('results');
@@ -248,7 +283,12 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
       const t = b.textContent;
       b.textContent = 'Copied ✓';
       setTimeout(() => { b.textContent = t; }, 1500);
-    } catch (e) {}
+    } catch (e) {
+      const b = document.getElementById('copyBtn');
+      const t = b.textContent;
+      b.textContent = 'Copy failed — select the text manually';
+      setTimeout(() => { b.textContent = t; }, 2500);
+    }
   });
 
   async function start(){
