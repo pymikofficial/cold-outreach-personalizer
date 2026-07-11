@@ -78,7 +78,7 @@ textarea{
   transition:border-color .3s var(--ease);
 }
 textarea:focus{border-color:rgba(167,139,250,.5);}
-textarea::placeholder{color:#55555f;}
+textarea::placeholder{color:#83838f;}
 #prospects{min-height:220px;}
 .char-count{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-2);text-align:right;margin-top:6px;}
 .char-count.warn{color:var(--warn);}
@@ -221,6 +221,7 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
 
     <div class="input-foot">
       <p class="privacy-note"><strong>Privacy note:</strong> your offer text is scrubbed for emails/phone numbers before it reaches the AI. Prospect info is sent as-is (not scrubbed) since it's the actual content being personalized against, not incidental noise. Capped at 12 prospects per batch.</p>
+      <p class="privacy-note"><strong>Use it responsibly:</strong> only paste contacts you have a legitimate reason to reach out to, and make sure your own sends include a working unsubscribe path where required.</p>
       <button class="generate" id="go">Generate sequences</button>
     </div>
   </div>
@@ -228,7 +229,7 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
   <div class="status" id="status"><span class="pulse"></span><span id="statusText">Working…</span></div>
 
   <section id="results" aria-live="polite">
-    <p class="summary-line" id="summaryLine"></p>
+    <h2 class="summary-line" id="summaryLine"></h2>
     <p class="summary-sub" id="summarySub"></p>
     <div id="cards"></div>
     <div class="results-actions">
@@ -287,7 +288,7 @@ Raj Patel is an Operations Manager at a mid-size logistics company."></textarea>
     } catch (e) {
       const b = document.getElementById('copyBtn');
       const t = b.textContent;
-      b.textContent = 'Copy failed — select the text manually';
+      b.textContent = 'Copy failed: select the text manually';
       setTimeout(() => { b.textContent = t; }, 2500);
     }
   });
